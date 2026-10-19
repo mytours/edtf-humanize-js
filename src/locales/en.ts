@@ -89,6 +89,25 @@ export const en: Locale = {
     },
     unspecifiedYearWithMonth: '{month}, {span}',
     unspecifiedYearRange: '{from} to {to}',
+    qualifiedParts: {
+      year: {
+        approximate: 'year approximate',
+        uncertain: 'year uncertain',
+        both: 'year approximate and uncertain',
+      },
+      month: {
+        approximate: 'month approximate',
+        uncertain: 'month uncertain',
+        both: 'month approximate and uncertain',
+      },
+      day: {
+        approximate: 'day approximate',
+        uncertain: 'day uncertain',
+        both: 'day approximate and uncertain',
+      },
+      connector: ', ',
+      template: ' ({parts})',
+    },
   },
   century: (year) => `${ordinalize(centuryNumber(year))} century${year < 0 ? ' BCE' : ''}`,
 }

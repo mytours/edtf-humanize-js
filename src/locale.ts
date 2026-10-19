@@ -3,6 +3,14 @@ export type Precision = 'year' | 'month' | 'day'
 /** A term that varies with the precision of the date it applies to */
 export type ByPrecision = Readonly<Record<Precision, string>>
 
+/** How to describe one qualified part: 'month uncertain' */
+export interface PartQualifierTerms {
+  readonly approximate: string
+  readonly uncertain: string
+  /** Approximate and uncertain ('%') */
+  readonly both: string
+}
+
 export type SeasonName =
   | 'spring'
   | 'summer'
@@ -93,6 +101,19 @@ export interface Locale {
     readonly unspecifiedYearWithMonth: string
     /** '1XXX' => {from} to {to} */
     readonly unspecifiedYearRange: string
+    /**
+     * Used with `qualifiers: 'parts'` when the parts of a date are qualified
+     * differently: '1982-?03-~12' => March 12, 1982 (month uncertain, day
+     * approximate). `template` wraps the joined `{parts}`. Omit to always use
+     * the whole-date wording.
+     */
+    readonly qualifiedParts?: {
+      readonly year: PartQualifierTerms
+      readonly month: PartQualifierTerms
+      readonly day: PartQualifierTerms
+      readonly connector: string
+      readonly template: string
+    }
   }
   /** The name of the century containing year: 1950 => '20th century' */
   readonly century: (year: number) => string

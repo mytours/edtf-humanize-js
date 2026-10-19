@@ -90,6 +90,25 @@ export const fr: Locale = {
     },
     unspecifiedYearWithMonth: '{month} {span}',
     unspecifiedYearRange: '{from} à {to}',
+    qualifiedParts: {
+      year: {
+        approximate: 'année approximative',
+        uncertain: 'année incertaine',
+        both: 'année approximative et incertaine',
+      },
+      month: {
+        approximate: 'mois approximatif',
+        uncertain: 'mois incertain',
+        both: 'mois approximatif et incertain',
+      },
+      day: {
+        approximate: 'jour approximatif',
+        uncertain: 'jour incertain',
+        both: 'jour approximatif et incertain',
+      },
+      connector: ', ',
+      template: ' ({parts})',
+    },
   },
   // 19XX => XXe siècle, 00XX => Ier siècle
   century: (year) =>

@@ -81,6 +81,25 @@ export const de: Locale = {
     },
     unspecifiedYearWithMonth: '{month} {span}',
     unspecifiedYearRange: '{from}–{to}',
+    qualifiedParts: {
+      year: {
+        approximate: 'Jahr ungefähr',
+        uncertain: 'Jahr unsicher',
+        both: 'Jahr ungefähr und unsicher',
+      },
+      month: {
+        approximate: 'Monat ungefähr',
+        uncertain: 'Monat unsicher',
+        both: 'Monat ungefähr und unsicher',
+      },
+      day: {
+        approximate: 'Tag ungefähr',
+        uncertain: 'Tag unsicher',
+        both: 'Tag ungefähr und unsicher',
+      },
+      connector: ', ',
+      template: ' ({parts})',
+    },
   },
   century: (year) => `${String(centuryNumber(year))}. Jahrhundert${year < 0 ? ' v. Chr.' : ''}`,
 }
