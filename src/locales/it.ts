@@ -82,6 +82,25 @@ export const it: Locale = {
     },
     unspecifiedYearWithMonth: '{month} {span}',
     unspecifiedYearRange: '{from}–{to}',
+    qualifiedParts: {
+      year: {
+        approximate: 'anno approssimativo',
+        uncertain: 'anno incerto',
+        both: 'anno approssimativo e incerto',
+      },
+      month: {
+        approximate: 'mese approssimativo',
+        uncertain: 'mese incerto',
+        both: 'mese approssimativo e incerto',
+      },
+      day: {
+        approximate: 'giorno approssimativo',
+        uncertain: 'giorno incerto',
+        both: 'giorno approssimativo e incerto',
+      },
+      connector: ', ',
+      template: ' ({parts})',
+    },
   },
   century: (year) => `${toRoman(centuryNumber(year))} secolo${year < 0 ? ' a. C.' : ''}`,
 }

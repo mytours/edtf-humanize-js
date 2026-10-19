@@ -1,7 +1,7 @@
 import * as edtf from 'edtf'
 
 import { normalizeLegacySyntax } from './legacy.js'
-import type { Locale, Precision, SeasonName, SetTerms } from './locale.js'
+import type { Locale, PartQualifierTerms, Precision, SeasonName, SetTerms } from './locale.js'
 import { locales, type LocaleCode } from './locales/index.js'
 import type {
   EdtfDate,
@@ -17,6 +17,12 @@ import type {
 export interface HumanizeOptions {
   /** A built-in locale code or a Locale object; defaults to 'en' */
   readonly locale?: LocaleCode | Locale
+  /**
+   * 'whole' (the default, as in the Ruby gem) qualifies the whole date:
+   * '2004-06-~11' => circa June 11, 2004. 'parts' names the qualified parts
+   * when they differ: June 11, 2004 (day approximate).
+   */
+  readonly qualifiers?: 'whole' | 'parts'
 }
 
 /** Thrown when a string is not valid EDTF */
@@ -45,7 +51,7 @@ export class InvalidEdtfError extends Error {
  */
 export function humanize(input: string | EdtfValue, options: HumanizeOptions = {}): string {
   const value = typeof input === 'string' ? parse(input) : input
-  return new Humanizer(resolveLocale(options.locale)).value(value)
+  return new Humanizer(resolveLocale(options.locale), options.qualifiers ?? 'whole').value(value)
 }
 
 function parse(input: string): EdtfValue {
@@ -74,6 +80,7 @@ const MONTH = 0b11_0000
 const DAY = 0b1100_0000
 
 const PRECISIONS: readonly Precision[] = ['year', 'month', 'day']
+const PART_MASKS: Readonly<Record<Precision, number>> = { year: YEAR, month: MONTH, day: DAY }
 
 // Set ranges with more dates than this are written 'from to' instead of listed
 const LISTED_RANGE_LIMIT = 3
@@ -113,6 +120,9 @@ interface DateParts {
   readonly unspecified: number
   readonly uncertain: boolean
   readonly approximate: boolean
+  /** Which parts are qualified, as edtf.js bitmasks */
+  readonly uncertainMask: number
+  readonly approximateMask: number
   readonly significant: number | undefined
 }
 
@@ -132,6 +142,8 @@ function dateParts(date: EdtfDate | EdtfYear): DateParts {
       unspecified: 0,
       uncertain: false,
       approximate: false,
+      uncertainMask: 0,
+      approximateMask: 0,
       significant:
         significant !== undefined && Number.isFinite(significant) ? significant : undefined,
     }
@@ -146,6 +158,8 @@ function dateParts(date: EdtfDate | EdtfYear): DateParts {
     unspecified: date.unspecified.value,
     uncertain: date.uncertain.value !== 0,
     approximate: date.approximate.value !== 0,
+    uncertainMask: date.uncertain.value,
+    approximateMask: date.approximate.value,
     significant: undefined,
   }
 }
@@ -177,7 +191,10 @@ function isEndpoint(value: EdtfInterval['lower']): value is EdtfIntervalEndpoint
 }
 
 class Humanizer {
-  constructor(private readonly locale: Locale) {}
+  constructor(
+    private readonly locale: Locale,
+    private readonly qualifiers: 'whole' | 'parts',
+  ) {}
 
   private get terms(): Locale['terms'] {
     return this.locale.terms
@@ -235,6 +252,9 @@ class Humanizer {
   // '1990~' => circa 1990
   private date(date: DateParts): string {
     const { terms } = this
+    const parts = this.qualifiers === 'parts' ? this.qualifiedParts(date) : undefined
+    if (parts !== undefined) return `${this.unspecified(date)}${parts}`
+
     return [
       date.approximate ? terms.approximatePrefix[date.precision] : '',
       date.uncertain ? terms.uncertainPrefix : '',
@@ -242,6 +262,32 @@ class Humanizer {
       date.uncertain ? terms.uncertainSuffix : '',
       date.approximate ? terms.approximateSuffix[date.precision] : '',
     ].join('')
+  }
+
+  // '1982-?03-~12' => ' (month uncertain, day approximate)', or undefined
+  // when every known part is qualified the same way
+  private qualifiedParts(date: DateParts): string | undefined {
+    const words = this.terms.qualifiedParts
+    if (words === undefined) return undefined
+
+    const known = PRECISIONS.slice(0, PRECISIONS.indexOf(date.precision) + 1).filter(
+      (part) => (date.unspecified & PART_MASKS[part]) === 0,
+    )
+    const qualifier = (part: Precision): keyof PartQualifierTerms | undefined => {
+      const approximate = (date.approximateMask & PART_MASKS[part]) !== 0
+      const uncertain = (date.uncertainMask & PART_MASKS[part]) !== 0
+      if (approximate && uncertain) return 'both'
+      if (approximate) return 'approximate'
+      return uncertain ? 'uncertain' : undefined
+    }
+    const qualifiers = known.map(qualifier)
+    if (qualifiers.every((q) => q === qualifiers[0])) return undefined
+
+    const notes = known.flatMap((part, i) => {
+      const q = qualifiers[i]
+      return q === undefined ? [] : [words[part][q]]
+    })
+    return fill(words.template, { parts: notes.join(words.connector) })
   }
 
   // '198X'       => 1980s (year unknown)

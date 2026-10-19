@@ -108,6 +108,16 @@ edtf.js parses EDTF 2019 (ISO 8601-2). For data written against the 2012 draft, 
 
 The rewrite is exported as `normalizeLegacySyntax(edtf)` if you want to migrate stored data.
 
+### Qualified parts
+
+EDTF 2019 can qualify one part of a date: in `2004-06-~11` only the day is approximate. By default, as in the Ruby gem, any qualifier applies to the whole date. Pass `qualifiers: 'parts'` to name the parts instead, when they differ:
+
+```ts
+humanize('1982-?03-~12') // 'circa March 12, 1982?'
+humanize('1982-?03-~12', { qualifiers: 'parts' }) // 'March 12, 1982 (month uncertain, day approximate)'
+humanize('1984~', { qualifiers: 'parts' }) // 'circa 1984' (every part is qualified the same way)
+```
+
 ## Languages
 
 Pass a locale code (`'en'`, `'fr'`, `'de'` or `'it'`) or a `Locale` object. English is the default.
@@ -145,7 +155,7 @@ Output matches the gem's specs, except for two fixes:
 - French: `Décembre`, not `Decembre`
 - German: two dates in an inclusive set are joined with `und`, not `eund`
 
-Translations of quarters, quadrimesters and semestrals, and English "first third of", have not been reviewed by native speakers. Pull requests with corrections, or with new languages, are welcome.
+Translations of quarters, quadrimesters and semestrals, English "first third of", and the French, German and Italian `qualifiedParts` wording have not been reviewed by native speakers. Pull requests with corrections, or with new languages, are welcome.
 
 ## Development
 
