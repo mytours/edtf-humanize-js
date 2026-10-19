@@ -1,6 +1,6 @@
 {
   "name": "edtf-humanize",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Turn Extended Date/Time Format (EDTF / ISO 8601-2) strings into human-readable text, in English, French, German and Italian",
   "keywords": [
     "edtf",
