@@ -261,6 +261,9 @@ class Humanizer {
 
     switch (yearKind(date)) {
       case undefined:
+        // Significant-digit ranges ('-1859S2') keep the signed year
+        if (date.year < 1 && date.significant === undefined)
+          return this.format(this.precisionFormat(knownPrecision(date)), date, true)
         return this.withSignificantDigits(date, display)
       case 'decade':
       case 'century':
@@ -466,8 +469,15 @@ class Humanizer {
     return this.locale.monthNames[date.month - 1] ?? String(date.month)
   }
 
-  /** A small strftime: %B, %-d, %d, %-m, %m, %Y and %% */
-  private format(pattern: string, date: Pick<DateParts, 'year' | 'month' | 'day'>): string {
+  /**
+   * A small strftime: %B, %-d, %d, %-m, %m, %Y and %%. With bce, %Y writes
+   * years before 1 as BCE, counting astronomically: 0000 => 1 BCE.
+   */
+  private format(
+    pattern: string,
+    date: Pick<DateParts, 'year' | 'month' | 'day'>,
+    bce = false,
+  ): string {
     return pattern.replace(/%(-?)([BdmY%])/g, (match, unpadded: string, directive: string) => {
       const pad = (n: number): string => (unpadded ? String(n) : String(n).padStart(2, '0'))
       switch (directive) {
@@ -478,7 +488,9 @@ class Humanizer {
         case 'm':
           return pad(date.month)
         case 'Y':
-          return formatYear(date.year)
+          return bce && date.year < 1
+            ? `${String(1 - date.year)}${this.terms.bcSuffix}`
+            : formatYear(date.year)
         case '%':
           return '%'
         default:
