@@ -63,8 +63,18 @@ describe('humanize', () => {
   })
 
   it('humanizes negative and early dates', () => {
-    expect(humanize('-0044-03-15')).toBe('March 15, -0044')
     expect(humanize('0099')).toBe('0099')
+  })
+
+  it('writes years before 1 as BCE, counting astronomically like ISO 8601', () => {
+    // Year 0000 is 1 BCE, so -0044 is 45 BCE
+    expect(humanize('0000')).toBe('1 BCE')
+    expect(humanize('-0044-03-15')).toBe('March 15, 45 BCE')
+    expect(humanize('-0500')).toBe('501 BCE')
+    expect(humanize('-0500~')).toBe('circa 501 BCE')
+    expect(humanize('Y-170000002')).toBe('170000003 BCE')
+    expect(humanize('-0044-03-15', { locale: 'de' })).toBe('15. März 45 v. Chr.')
+    expect(humanize('-0044/0010')).toBe('45 BCE to 0010')
   })
 
   it('humanizes month ranges in sets', () => {
