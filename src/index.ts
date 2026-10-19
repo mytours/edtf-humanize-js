@@ -1,6 +1,6 @@
 export { humanize, InvalidEdtfError, type HumanizeOptions } from './humanize.js'
 export { normalizeLegacySyntax } from './legacy.js'
-export { de, en, fr, it, locales, type LocaleCode } from './locales/index.js'
+export { de, en, enGB, fr, it, locales, type LocaleCode } from './locales/index.js'
 export type {
   ByPrecision,
   Locale,
