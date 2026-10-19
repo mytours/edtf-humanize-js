@@ -132,7 +132,7 @@ type YearKind = 'decade' | 'century' | 'millennium' | 'all' | 'digits'
 type UnknownPart = 'year' | 'month' | 'day'
 
 function dateParts(date: EdtfDate | EdtfYear): DateParts {
-  if (date.type === 'Year') {
+  if (is(date, 'Year')) {
     const significant = date.significant
     return {
       year: date.year,
@@ -186,6 +186,36 @@ function isRange(entry: SetEntry): entry is readonly [EdtfSetRangeEnd, EdtfSetRa
   return Array.isArray(entry)
 }
 
+type Kind = EdtfValue['type']
+
+// edtf.js derives each value's `type` from its class name, and bundlers can
+// rename the classes (`class Date` shadows the global, so it often becomes
+// Date$1). Check the class instead, falling back to `type` for values made
+// by another copy of edtf.js. Set extends List, so it comes first.
+const CLASSES: readonly (readonly [Kind, unknown])[] = [
+  ['Set', edtf.Set],
+  ['List', edtf.List],
+  ['Interval', edtf.Interval],
+  ['Season', edtf.Season],
+  ['Decade', edtf.Decade],
+  ['Century', edtf.Century],
+  ['Year', edtf.Year],
+  ['Date', edtf.Date],
+]
+
+function kindOf(value: { readonly type: string }): string {
+  for (const [kind, cls] of CLASSES)
+    if (typeof cls === 'function' && value instanceof cls) return kind
+  return value.type
+}
+
+function is<K extends Exclude<Kind, 'Set' | 'List'>>(
+  value: { readonly type: string },
+  kind: K,
+): value is Extract<EdtfValue, { readonly type: K }> {
+  return kindOf(value) === kind
+}
+
 function isEndpoint(value: EdtfInterval['lower']): value is EdtfIntervalEndpoint {
   return typeof value === 'object' && value !== null
 }
@@ -201,22 +231,12 @@ class Humanizer {
   }
 
   value(value: EdtfValue): string {
-    switch (value.type) {
-      case 'Date':
-      case 'Year':
-        return this.date(dateParts(value))
-      case 'Decade':
-        return this.decade(value.year)
-      case 'Century':
-        return this.locale.century(value.year)
-      case 'Season':
-        return this.season(value)
-      case 'Interval':
-        return this.interval(value)
-      case 'Set':
-      case 'List':
-        return this.set(value)
-    }
+    if (is(value, 'Date') || is(value, 'Year')) return this.date(dateParts(value))
+    if (is(value, 'Decade')) return this.decade(value.year)
+    if (is(value, 'Century')) return this.locale.century(value.year)
+    if (is(value, 'Season')) return this.season(value)
+    if (is(value, 'Interval')) return this.interval(value)
+    return this.set(value)
   }
 
   // '199' => 1990s, '-001' => 10s BCE
@@ -421,7 +441,7 @@ class Humanizer {
   }
 
   private endpoint(endpoint: EdtfIntervalEndpoint): string {
-    return endpoint.type === 'Season' ? this.season(endpoint) : this.date(dateParts(endpoint))
+    return is(endpoint, 'Season') ? this.season(endpoint) : this.date(dateParts(endpoint))
   }
 
   private intervalPrefix(lower: EdtfIntervalEndpoint): string {
@@ -429,7 +449,7 @@ class Humanizer {
   }
 
   private intervalConnector(upper: EdtfIntervalEndpoint): string {
-    const approximate = upper.type !== 'Year' && upper.approximate.value !== 0
+    const approximate = !is(upper, 'Year') && upper.approximate.value !== 0
     if (approximate) return this.terms.intervalConnectorApproximate
 
     return this.terms.intervalConnector[endpointPrecision(upper)]
@@ -442,7 +462,7 @@ class Humanizer {
     upper: EdtfIntervalEndpoint,
   ): string | undefined {
     const words = this.locale.spanInterval
-    if (words === undefined || lower.type !== 'Date' || upper.type !== 'Date') return undefined
+    if (words === undefined || !is(lower, 'Date') || !is(upper, 'Date')) return undefined
 
     const from = dateParts(lower)
     const to = dateParts(upper)
@@ -480,7 +500,7 @@ class Humanizer {
 
   // '[1980,1981]' => 1980 or 1981, '{..1980}' => on and before 1980
   private set(set: EdtfSet): string {
-    const terms = set.type === 'Set' ? this.terms.exclusiveSet : this.terms.inclusiveSet
+    const terms = kindOf(set) === 'Set' ? this.terms.exclusiveSet : this.terms.inclusiveSet
     const entries = set.values.flatMap((entry) =>
       isRange(entry) ? this.setRange(...entry) : [this.value(entry)],
     )
@@ -547,7 +567,7 @@ class Humanizer {
 }
 
 function endpointPrecision(endpoint: EdtfIntervalEndpoint): Precision {
-  return endpoint.type === 'Date' ? dateParts(endpoint).precision : 'year'
+  return is(endpoint, 'Date') ? dateParts(endpoint).precision : 'year'
 }
 
 // '1990-XX' has month precision, but only the year is known
