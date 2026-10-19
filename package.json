@@ -53,16 +53,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "check:package": "publint && attw --pack .",
-    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:dist && npm run check:package",
+    "check:package": "publint --pack npm && attw --pack .",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:dist",
     "test:dist": "node scripts/smoke.cjs && node scripts/smoke.mjs"
   },
   "dependencies": {
     "edtf": "4.11.1"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
