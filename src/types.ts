@@ -56,9 +56,17 @@ export interface EdtfInterval {
   readonly upper: EdtfIntervalEndpoint | number | null
 }
 
+/** The ends of a range inside a set: '1670..1672' */
+export interface EdtfSetRangeEnd extends EdtfDate {
+  /** Every date from this one to end, at this date's precision */
+  through(end: EdtfSetRangeEnd): Iterable<EdtfDate>
+}
+
 /** '[1980,1981]' (Set: one of) or '{1980,1981}' (List: all of) */
 export interface EdtfSet extends Iterable<EdtfValue> {
   readonly type: 'Set' | 'List'
+  /** Members as written; a range is a pair of its ends */
+  readonly values: readonly (EdtfValue | readonly [EdtfSetRangeEnd, EdtfSetRangeEnd])[]
   readonly earlier: boolean
   readonly later: boolean
 }
