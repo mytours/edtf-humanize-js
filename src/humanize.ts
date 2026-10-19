@@ -9,6 +9,7 @@ import type {
   EdtfIntervalEndpoint,
   EdtfSeason,
   EdtfSet,
+  EdtfSetRangeEnd,
   EdtfValue,
   EdtfYear,
 } from './types.js'
@@ -73,6 +74,9 @@ const MONTH = 0b11_0000
 const DAY = 0b1100_0000
 
 const PRECISIONS: readonly Precision[] = ['year', 'month', 'day']
+
+// Set ranges with more dates than this are written 'from to' instead of listed
+const LISTED_RANGE_LIMIT = 3
 
 // EDTF 2019 season codes 21-41
 const SEASONS: readonly SeasonName[] = [
@@ -160,6 +164,12 @@ function toSentence(items: readonly string[], terms: SetTerms): string {
   if (items.length < 3) return items.join(terms.twoDatesConnector)
 
   return `${items.slice(0, -1).join(terms.datesConnector)}${terms.lastDateConnector}${String(items.at(-1))}`
+}
+
+type SetEntry = EdtfSet['values'][number]
+
+function isRange(entry: SetEntry): entry is readonly [EdtfSetRangeEnd, EdtfSetRangeEnd] {
+  return Array.isArray(entry)
 }
 
 function isEndpoint(value: EdtfInterval['lower']): value is EdtfIntervalEndpoint {
@@ -422,7 +432,9 @@ class Humanizer {
   // '[1980,1981]' => 1980 or 1981, '{..1980}' => on and before 1980
   private set(set: EdtfSet): string {
     const terms = set.type === 'Set' ? this.terms.exclusiveSet : this.terms.inclusiveSet
-    const entries = [...set].map((entry) => this.value(entry))
+    const entries = set.values.flatMap((entry) =>
+      isRange(entry) ? this.setRange(...entry) : [this.value(entry)],
+    )
     const last = entries.length - 1
 
     if (set.earlier && entries[0] !== undefined) entries[0] = `${terms.earlierPrefix}${entries[0]}`
@@ -430,6 +442,20 @@ class Humanizer {
       entries[last] = `${terms.laterPrefix}${entries[last]}`
 
     return toSentence(entries, terms)
+  }
+
+  // '1670..1672' => 1670, 1671, 1672; '1670..1680' => 1670 to 1680.
+  // Counts lazily, so a range of days over centuries isn't expanded.
+  private setRange(from: EdtfSetRangeEnd, to: EdtfSetRangeEnd): string[] {
+    const dates: EdtfDate[] = []
+    for (const date of from.through(to)) {
+      if (dates.length === LISTED_RANGE_LIMIT) {
+        const connector = this.terms.intervalConnector[dateParts(to).precision]
+        return [`${this.value(from)}${connector}${this.value(to)}`]
+      }
+      dates.push(date)
+    }
+    return dates.map((date) => this.value(date))
   }
 
   private precisionFormat(precision: Precision): string {

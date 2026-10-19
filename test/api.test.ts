@@ -70,6 +70,20 @@ describe('humanize', () => {
   it('humanizes month ranges in sets', () => {
     expect(humanize('[1990-05..1990-07]')).toBe('May 1990, June 1990 or July 1990')
   })
+
+  it('summarises set ranges of more than three dates instead of listing them', () => {
+    expect(humanize('[1950..1960]')).toBe('1950 to 1960')
+    expect(humanize('[1667,1668,1670..1680]')).toBe('1667, 1668 or 1670 to 1680')
+    expect(humanize('{1960,1970..1979}')).toBe('1960 and 1970 to 1979')
+    expect(humanize('[1950..1960]', { locale: 'fr' })).toBe('1950 à 1960')
+    expect(humanize('[1950-05..1960-06]', { locale: 'de' })).toBe('Mai 1950 - Juni 1960')
+  })
+
+  it('summarises day ranges in sets without listing every day', () => {
+    const start = performance.now()
+    expect(humanize('[1890-01-01..2020-12-25]')).toBe('January 1, 1890 to December 25, 2020')
+    expect(performance.now() - start).toBeLessThan(100)
+  })
 })
 
 describe('normalizeLegacySyntax', () => {
