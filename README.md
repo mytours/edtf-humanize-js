@@ -120,7 +120,7 @@ humanize('1984~', { qualifiers: 'parts' }) // 'circa 1984' (every part is qualif
 
 ## Languages
 
-Pass a locale code (`'en'`, `'fr'`, `'de'` or `'it'`) or a `Locale` object. English is the default.
+Pass a locale code (`'en'`, `'en-GB'`, `'fr'`, `'de'` or `'it'`) or a `Locale` object. English is the default; `'en-GB'` is the same with day-first dates (`1 July 1975`).
 
 ```ts
 humanize('1975-07-01', { locale: 'de' }) // '1. Juli 1975'
